@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upload Foto dengan Steganografi</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      overflow-x: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      position: relative;
+      width: 50%;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.6);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1;
+      box-sizing: border-box; /* Pastikan padding terhitung dalam ukuran elemen */
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+
+    input, select, textarea, button {
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1.5rem; /* Menambahkan margin bawah */
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1.1rem;
+      box-sizing: border-box; /* Pastikan padding terhitung dalam ukuran elemen */
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 1rem;
+      margin-top: 1rem; /* Menambahkan margin atas agar tidak mepet dengan input sebelumnya */
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #key-length-warning {
+      color: red;
+      font-size: 1rem;
+    }
+
+    .output {
+      background-color: #e0e0e0;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      border-radius: 5px;
+      word-wrap: break-word;
+      font-size: 1.1rem;
+    }
+
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 0.8rem 1.5rem;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-align: center;
+      transition: background-color 0.3s;
+      z-index: 10;
+    }
+
+    .back-button:hover {
+      background-color: #0056b3;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 100;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      padding: 2rem;
+      border-radius: 10px;
+      text-align: center;
+      width: 80%;
+      max-width: 400px;
+      box-sizing: border-box;
+    }
+    .close-btn {
+      background-color: #007bff;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      cursor: pointer;
+      font-size: 1.1rem;
+      border-radius: 5px;
+    }
+  </style>
+
+  <script>
+    function toggleInputType() {
+      const option = document.getElementById('steganography-type').value;
+      const messageDiv = document.getElementById('message-div');
+      const imageDiv = document.getElementById('image-div');
+
+      if (option === 'message') {
+        messageDiv.classList.remove('hidden');
+        imageDiv.classList.add('hidden');
+      } else if (option === 'image') {
+        messageDiv.classList.add('hidden');
+        imageDiv.classList.remove('hidden');
+      }
+    }
+
+    function toggleKeySize() {
+      const encryptionSelect = document.getElementById('encryption');
+      const keySizeDiv = document.getElementById('key-size-div');
+      const keyLengthWarning = document.getElementById('key-length-warning');
+      
+      if (encryptionSelect.value === 'aes') {
+        keySizeDiv.classList.remove('hidden');
+        checkKeyLength();
+      } else {
+        keySizeDiv.classList.add('hidden');
+        keyLengthWarning.textContent = '';
+      }
+    }
+
+    function showError(message) {
+      const modal = document.getElementById("errorModal");
+      const modalMessage = document.getElementById("modalMessage");
+      modalMessage.textContent = message;
+      modal.style.display = "flex";
+    }
+
+    function validateKeyInput() {
+      const encryptionType = document.getElementById('encryption').value;
+      const keyInput = document.getElementById('key').value;
+
+      if (encryptionType === 'caesar' && isNaN(keyInput)) {
+        showError("Kunci untuk Caesar Cipher harus berupa angka!");
+        document.getElementById('key').value = ""; // Clear invalid input
+      } else if (encryptionType === 'vigenere' && /[^a-zA-Z]/.test(keyInput)) {
+        showError("Kunci untuk Vigenère Cipher harus berupa huruf saja!");
+        document.getElementById('key').value = ""; // Clear invalid input
+      }
+    }
+
+    function checkKeyLength() {
+      const keyInput = document.getElementById('key');
+      const keySizeSelect = document.getElementById('key-size');
+      const keyLengthWarning = document.getElementById('key-length-warning');
+      const encryptionSelect = document.getElementById('encryption');
+
+      if (encryptionSelect.value !== 'aes') {
+        keyLengthWarning.textContent = '';
+        return;
+      }
+
+      let requiredLength = 16;
+      if (keySizeSelect.value === '192') {
+        requiredLength = 24;
+      } else if (keySizeSelect.value === '256') {
+        requiredLength = 32;
+      }
+
+      if (keyInput.value.length !== requiredLength) {
+    keyLengthWarning.textContent = `Kunci harus memiliki ${requiredLength} karakter. Saat ini: ${keyInput.value.length}`;
+    keyLengthWarning.style.color = 'red'; // Mengatur warna teks menjadi merah jika panjang kunci belum terpenuhi
+  } else {
+    keyLengthWarning.textContent = `Panjang kunci sesuai (${requiredLength} karakter).`;
+    keyLengthWarning.style.color = 'green'; // Mengatur warna teks menjadi hijau jika panjang kunci sudah terpenuhi
+  }
+}
+
+    // Function to close the modal
+    function closeModal() {
+      document.getElementById("errorModal").style.display = "none";
+    }
+  </script>
+</head>
+<body>
+
+  <!-- Canvas untuk Three.js -->
+  <canvas id="bg"></canvas>
+
+  <!-- Tombol Back ke Dashboard -->
+  <a href="/dashboard" class="back-button">← Back to Dashboard</a>
+
+  <div class="container">
+    <h2>Upload Foto dengan Steganografi</h2>
+
+    <div id="upload">
+      <form action="/upload-photo" method="POST" enctype="multipart/form-data">
+        <label for="photo">Unggah Gambar Utama:</label>
+        <input type="file" id="photo" name="photo" accept=".jpg, .jpeg, .png" required>
+
+        <label for="steganography-type">Pilih Jenis Data yang Ingin Disisipkan:</label>
+        <select id="steganography-type" name="steganography-type" onchange="toggleInputType()" required>
+          <option value="message">Pesan Teks</option>
+          <option value="image">Gambar Rahasia</option>
+        </select>
+
+        <div id="message-div">
+          <label for="message">Masukkan Pesan yang Ingin Disisipkan:</label>
+          <textarea id="message" name="message" placeholder="Masukkan pesan..."></textarea>
+        </div>
+
+        <div id="image-div" class="hidden">
+          <label for="secret-image">Unggah Gambar Rahasia:</label>
+          <input type="file" id="secret-image" name="secret-image" accept=".jpg, .jpeg, .png">
+        </div>
+
+        <label for="encryption">Pilih Metode Enkripsi:</label>
+        <select id="encryption" name="encryption" onchange="toggleKeySize()" required>
+          <option value="caesar">Caesar Cipher</option>
+          <option value="vigenere">Vigenère Cipher</option>
+          <option value="aes">AES Encryption</option>
+        </select>
+
+        <div id="key-size-div" class="hidden">
+          <label for="key-size">Pilih Ukuran Kunci AES:</label>
+          <select id="key-size" name="key-size" onchange="checkKeyLength()">
+            <option value="128">128-bit (16 karakter)</option>
+            <option value="192">192-bit (24 karakter)</option>
+            <option value="256">256-bit (32 karakter)</option>
+          </select>
+        </div>
+
+        <label for="key">Masukkan Kunci Enkripsi:</label>
+        <input type="text" id="key" name="key" placeholder="Masukkan kunci enkripsi" oninput="validateKeyInput(); checkKeyLength()" required>
+
+        <p id="key-length-warning"></p>
+
+        <button type="submit">Sisipkan Data</button>
+      </form>
+
+      <% if (typeof downloadLink !== 'undefined' && downloadLink) { %>
+        <div>
+          <p>Download file dengan pesan tersisipkan:</p>
+          <a href="<%= downloadLink %>" class="download-button" download>Download File</a>
+        </div>
+      <% } %>      
+
+      <% if (typeof extractedImageLink !== 'undefined' && extractedImageLink) { %>
+        <div>
+          <p>Gambar tersembunyi berhasil diekstrak:</p>
+          <a href="<%= extractedImageLink %>" class="download-button" download="gambar_tersembunyi.png">Download Gambar Tersembunyi</a>
+
+        </div>
+      <% } %>
+      
+      
+    </div>
+
+    <div id="extract">
+      <h2>Ekstraksi Data dari Gambar</h2>
+      <form action="/extract-message" method="POST" enctype="multipart/form-data">
+        <label for="photo">Unggah Gambar:</label>
+        <input type="file" id="photo" name="photo" accept=".jpg, .jpeg, .png" required>
+
+        <label for="extract-type">Pilih Jenis Data yang Ingin Diekstrak:</label>
+        <select id="extract-type" name="extract-type" required>
+          <option value="message">Pesan Tersembunyi</option>
+          <option value="image">Gambar Tersembunyi</option>
+        </select>
+
+        <label for="encryption-extract">Pilih Metode Dekripsi:</label>
+        <select id="encryption-extract" name="encryption" required>
+          <option value="caesar">Caesar Cipher</option>
+          <option value="vigenere">Vigenère Cipher</option>
+          <option value="aes">AES Encryption</option>
+        </select>
+
+        <label for="key-extract">Masukkan Kunci Dekripsi:</label>
+        <input type="text" id="key-extract" name="key" placeholder="Masukkan kunci dekripsi" required>
+
+        <button type="submit">Ekstrak Data</button>
+      </form>
+      
+      <% if (typeof extractedMessage !== 'undefined' && extractedMessage) { %>
+        <div>
+          <p>Pesan tersembunyi berhasil diekstraksi:</p>
+          <div class="output"><%= extractedMessage %></div>
+        </div>
+      <% } %>
+
+      <% if (typeof extractedImageLink !== 'undefined' && extractedImageLink) { %>
+        <div>
+          <p>Gambar tersembunyi berhasil diekstrak:</p>
+          <a href="<%= extractedImageLink %>" download>Download Gambar Tersembunyi</a>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Modal for error messages -->
+  <div id="errorModal" class="modal">
+    <div class="modal-content">
+      <p id="modalMessage"></p>
+      <button class="close-btn" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    function addStar() {
+      const geometry = new THREE.SphereGeometry(0.1, 24, 24);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const star = new THREE.Mesh(geometry, material);
+
+      const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(500));
+      star.position.set(x, y, z);
+      scene.add(star);
+    }
+
+    Array(500).fill().forEach(addStar);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      scene.rotation.x += 0.0005;
+      scene.rotation.y += 0.0005;
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    camera.position.z = 200;
+  </script>
+
+</body>
+</html>

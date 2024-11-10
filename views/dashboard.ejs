@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Perlindungan Data Digital</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #e0e0e0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Untuk mencegah scroll karena animasi */
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1; /* Pastikan canvas berada di belakang container */
+    }
+
+    .container {
+      position: relative;
+      width: 80%;
+      margin: 5rem auto;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.5); /* Transparansi untuk menyatu dengan background */
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 1.5s ease;
+      z-index: 1; /* Pastikan container berada di atas canvas */
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      font-size: 2.2rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+
+    h2::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: -0.5rem;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background-color: #007bff;
+    }
+
+    .description {
+      text-align: center;
+      color: #555;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    ul li {
+      width: 45%;
+      margin: 1rem 0;
+    }
+
+    a {
+      display: block;
+      text-align: center;
+      padding: 1.2rem;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-size: 1.5rem; /* Perbesar ukuran teks */
+      font-weight: bold;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      animation: slideIn 1s ease-out;
+    }
+
+    a:hover {
+      background-color: #0056b3;
+      transform: translateY(-5px);
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+    }
+
+    .icon {
+      font-size: 2rem;
+      margin-right: 10px;
+    }
+
+    .logout {
+      display: block;
+      width: 100px;
+      margin: 0 auto;
+      padding: 0.5rem;
+      background-color: #dc3545;
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      font-weight: bold;
+      text-decoration: none;
+      margin-bottom: 2rem;
+    }
+
+    .logout:hover {
+      background-color: #c82333;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(20px); }
+      to { transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas untuk Three.js -->
+  <canvas id="bg"></canvas>
+
+  <div class="container">
+    <h2>Dashboard Perlindungan Data Digital</h2>
+    <p class="description">Selamat datang di Dashboard. Kelola dan lindungi file digital Anda dengan berbagai alat steganografi.</p>
+
+    <ul>
+      <li><a href="/upload-photo"><span class="icon">🖼️</span>Upload Foto dengan Steganografi</a></li>
+      <li><a href="/upload-video"><span class="icon">🎥</span>Upload Video dengan Steganografi</a></li>
+      <li><a href="/encrypt-caesar"><span class="icon">🔒</span>Enkripsi Teks - Caesar Cipher</a></li>
+      <li><a href="/encrypt-vigenere"><span class="icon">🔒</span>Enkripsi Teks - Vigenere Cipher</a></li>
+      <li><a href="/encrypt-aes"><span class="icon">🔒</span>Enkripsi Teks - AES</a></li>
+      <li><a href="/encrypt-rsa"><span class="icon">🔒</span>Enkripsi Teks - RSA</a></li>
+    </ul>
+
+    <a href="/logout" class="logout">Logout</a>
+  </div>
+
+  <!-- Three.js Animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // Setup dasar Three.js
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Membuat partikel bintang
+    function addStar() {
+      const geometry = new THREE.SphereGeometry(0.1, 24, 24);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const star = new THREE.Mesh(geometry, material);
+
+      // Posisi random untuk bintang
+      const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(500));
+      star.position.set(x, y, z);
+      scene.add(star);
+    }
+
+    // Menambahkan banyak bintang
+    Array(500).fill().forEach(addStar);
+
+    // Animasi bintang yang berputar
+    function animate() {
+      requestAnimationFrame(animate);
+
+      scene.rotation.x += 0.0005;
+      scene.rotation.y += 0.0005;
+
+      renderer.render(scene, camera);
+    }
+
+    // Memulai animasi
+    animate();
+
+    // Memastikan ukuran canvas diperbarui saat jendela berubah ukuran
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // Memindahkan kamera lebih jauh
+    camera.position.z = 200;
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register Admin</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    /* Tambahkan style untuk pesan error */
+    .error-message {
+      color: rgb(251, 251, 251);
+      margin-top: 10px;
+      display: none; /* Awalnya disembunyikan */
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Mencegah halaman bisa digeser */
+      width: 100%;
+      height: 100%;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      background: none; /* Menghapus background gradient */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    canvas {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%; /* Memastikan canvas mencakup seluruh layar */
+      height: 100%; /* Memastikan canvas mencakup seluruh layar */
+      z-index: -1; /* Pastikan canvas berada di belakang */
+    }
+
+    .register-container {
+      position: relative;
+      width: 100%;
+      max-width: 500px; /* Memperbesar lebar maksimal card */
+      padding: 3rem; /* Menambah padding untuk membuat card lebih besar */
+      background-color: rgba(255, 255, 255, 0.70);
+      border-radius: 15px; /* Membuat sudut lebih halus */
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+      z-index: 1;
+      text-align: center;
+      margin: 2rem auto; /* Menambahkan margin untuk lebih ke tengah */
+    }
+
+    h2 {
+      font-size: 2rem; /* Memperbesar ukuran teks judul */
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      text-align: left;
+    }
+
+    input {
+      width: 100%;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      border-radius: 8px; /* Membuat input lebih halus */
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+
+    button {
+      width: 100%;
+      padding: 1rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-top: 1.5rem;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .login-link {
+      margin-top: 1.5rem;
+    }
+
+    .login-link a {
+      color: #007bff;
+      text-decoration: none;
+    }
+
+    .login-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas untuk Three.js -->
+  <canvas id="bg"></canvas>
+
+  <div class="register-container">
+    <h2>Register Admin</h2>
+    <form id="registerForm">
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username" required>
+
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password" required>
+
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" required>
+
+      <button type="submit">Register</button>
+    </form>
+
+    <!-- Area untuk pesan error -->
+    <div class="error-message" id="error-message"></div>
+
+    <div class="login-link">
+      <p>Sudah punya akun? <a href="/login">Login di sini</a></p>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // AJAX untuk mencegah refresh halaman dan menangani respons secara dinamis
+    document.getElementById('registerForm').addEventListener('submit', function (e) {
+      e.preventDefault(); // Mencegah form dari refresh halaman
+
+      // Ambil nilai input
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      const email = document.getElementById('email').value;
+
+      // Kirim data menggunakan Fetch API
+      fetch('/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ username, password, email }) // Kirim data form dalam format JSON
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          // Jika berhasil, redirect ke halaman login
+          window.location.href = '/login?register=success';
+        } else {
+          // Tampilkan pesan error di halaman
+          const errorMessage = document.getElementById('error-message');
+          errorMessage.textContent = data.message;
+          errorMessage.style.display = 'block'; // Tampilkan error
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        const errorMessage = document.getElementById('error-message');
+        // Gunakan <br> untuk menambahkan enter atau baris baru
+        errorMessage.innerHTML = 'Username Telah Terdaftar.<br>Silakan Masukkan Username Lain';
+        errorMessage.style.display = 'block';
+      });
+    });
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    // Membuat partikel bintang
+    function addStar() {
+      const geometry = new THREE.SphereGeometry(0.1, 24, 24);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const star = new THREE.Mesh(geometry, material);
+
+      // Posisi random untuk bintang
+      const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(100));
+      star.position.set(x, y, z);
+      scene.add(star);
+    }
+
+    // Menambahkan beberapa bintang ke scene
+    Array(200).fill().forEach(addStar);
+
+    // Menambahkan efek rotasi latar belakang
+    function animate() {
+      requestAnimationFrame(animate);
+
+      // Rotasi seluruh scene
+      scene.rotation.x += 0.001;
+      scene.rotation.y += 0.001;
+
+      renderer.render(scene, camera);
+    }
+
+    // Memulai animasi
+    animate();
+
+    // Memastikan ukuran canvas diperbarui saat jendela berubah ukuran
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    // Memindahkan kamera sedikit lebih jauh
+    camera.position.z = 5;
+  </script>
+  
+</body>
+</html>

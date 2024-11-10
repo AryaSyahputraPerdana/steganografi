@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Enkripsi & Dekripsi Teks - Caesar Cipher</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
+      overflow-x: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    .container {
+      position: relative;
+      width: 50%;
+      margin: 2rem auto;
+      padding: 2rem;
+      background-color: rgba(255, 255, 255, 0.6);
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      font-size: 2rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+
+    input, textarea, button {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 1.1rem;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 1.2rem;
+      padding: 1rem;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    .output {
+      background-color: #e0e0e0;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      border-radius: 5px;
+      word-wrap: break-word;
+      font-size: 1.1rem;
+    }
+
+    .error-message {
+      color: red;
+      font-weight: bold;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .back-button {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      padding: 0.8rem 1.5rem;
+      background-color: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 1.3rem;
+      font-weight: bold;
+      text-align: center;
+      transition: background-color 0.3s;
+      z-index: 10; /* Pastikan tombol berada di atas elemen lain */
+    }
+
+    .back-button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Canvas untuk Three.js -->
+  <canvas id="bg"></canvas>
+
+  <!-- Tombol Back ke Dashboard -->
+  <a href="/dashboard" class="back-button">← Back to Dashboard</a>
+
+  <div class="container">
+    <h2>Enkripsi & Dekripsi Teks - Caesar Cipher</h2>
+
+    <!-- Card Enkripsi -->
+    <div class="container">
+      <h3>Form Enkripsi</h3>
+      <form action="/encrypt-caesar" method="POST">
+        <label for="text">Masukkan Teks yang Ingin Dienkripsi:</label>
+        <textarea id="text" name="text" rows="4" placeholder="Masukkan teks..." required></textarea>
+
+        <label for="shift">Masukkan Pergeseran (Shift):</label>
+        <input type="number" id="shift" name="shift" placeholder="Misal: 3" required>
+
+        <button type="submit" name="action" value="encrypt">Enkripsi Teks</button>
+      </form>
+
+      <!-- Tampilkan hasil enkripsi jika tersedia -->
+      <% if (typeof encryptedText !== 'undefined' && encryptedText) { %>
+        <div class="output">
+          <p>Hasil Enkripsi:</p>
+          <div><%= encryptedText %></div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Card Dekripsi -->
+    <div class="container" style="margin-top: 2rem;">
+      <h3>Form Dekripsi</h3>
+      <form action="/decrypt-caesar" method="POST">
+        <label for="decrypted-text">Masukkan Teks yang Ingin Didekripsi:</label>
+        <textarea id="decrypted-text" name="text" rows="4" placeholder="Masukkan teks terenkripsi..." required></textarea>
+
+        <label for="decrypt-shift">Masukkan Pergeseran (Shift):</label>
+        <input type="number" id="decrypt-shift" name="shift" placeholder="Misal: 3" required>
+
+        <button type="submit" name="action" value="decrypt">Dekripsi Teks</button>
+      </form>
+
+      <!-- Tampilkan hasil dekripsi jika tersedia -->
+      <% if (typeof decryptedText !== 'undefined' && decryptedText) { %>
+        <div class="output">
+          <p>Hasil Dekripsi:</p>
+          <div><%= decryptedText %></div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+
+  <!-- Three.js Animation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+
+    function addStar() {
+      const geometry = new THREE.SphereGeometry(0.1, 24, 24);
+      const material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+      const star = new THREE.Mesh(geometry, material);
+
+      const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(500));
+      star.position.set(x, y, z);
+      scene.add(star);
+    }
+
+    Array(500).fill().forEach(addStar);
+
+    function animate() {
+      requestAnimationFrame(animate);
+      scene.rotation.x += 0.0005;
+      scene.rotation.y += 0.0005;
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+
+    camera.position.z = 200;
+  </script>
+
+</body>
+</html>
